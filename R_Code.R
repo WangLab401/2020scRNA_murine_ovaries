@@ -252,7 +252,7 @@ genesKept <- geneFiltering(expr_Mat, scenicOptions=scenicOptions,
                            minCountsPerGene=3*.01*ncol(expr_Mat),
                            minSamples=ncol(expr_Mat)*.01)
 
-######The following steps are executed according to SCENIC pepline with default parameters. 
+######The following steps are executed according to SCENIC pipeline with default parameters. 
 #####Please refer to the url below: 
 ### https://github.com/aertslab/SCENIC
 ### https://rawcdn.githack.com/aertslab/SCENIC/6aed5ef0b0386a87982ba4cc7aa13db0444263a6/inst/doc/SCENIC_Running.html
