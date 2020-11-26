@@ -74,7 +74,7 @@ saveRDS(cell_type, file = "D:\\...\\cell_type.rds")
 Seurat_Germs <- readRDS(file = "D:\\...\\Germ_cells.rds")
 Seurat_Germs
 
-Seurat_Germs[["percent.mt"]] <- PercentageFeatureSet(Seurat_Germs, pattern = "^MT-")
+Seurat_Germs[["percent.mt"]] <- PercentageFeatureSet(Seurat_Germs, pattern = "^mt-")
 VlnPlot(Seurat_Granulosa, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
 
 plot1 <- FeatureScatter(Seurat_Germs, feature1 = "nCount_RNA", feature2 = "percent.mt")
