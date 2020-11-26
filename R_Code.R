@@ -118,6 +118,112 @@ Germ_cells <- RunUMAP(Germ_cells, dims = 1:10)
 Germ_cells_cluster.markers <- FindAllMarkers(Germ_cells, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
 
 
+#############   Perform integration of Germ and Granulosa cell
+
+library(Seurat)
+library(cowplot)
+library(patchwork)
+Subset_Granulosa <- readRDS(file = "E:\\Subset_Granulosa_seurat.rds")
+Subset_Germs <- readRDS(file = "E:\\Subset_Germs_seurat.rds")
+
+pancreas.anchors <- FindIntegrationAnchors(object.list = list(Subset_Granulosa, Subset_Germs), dims = 1:30)
+#Integration 
+Germ_GCs.integrated <- IntegrateData(anchorset = pancreas.anchors, dims = 1:30)
+Germ_GCs.integrated
+DefaultAssay(object = Germ_GCs.integrated) <- "RNA"
+
+Germ_GCs.integrated <- ScaleData(Germ_GCs.integrated, verbose = FALSE)
+Germ_GCs.integrated <- FindVariableFeatures(Germ_GCs.integrated, selection.method = "vst", nfeatures = 2000)
+
+top10 <- head(VariableFeatures(Germ_GCs.integrated), 10)
+plot1 <- VariableFeaturePlot(Germ_GCs.integrated)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+
+
+Germ_GCs.integrated <- RunPCA(Germ_GCs.integrated, npcs = 30, verbose = FALSE)
+Germ_GCs.integrated <- RunUMAP(Germ_GCs.integrated, reduction = "pca", dims = 1:20)
+
+
+## t-SNE and Clustering
+
+Germ_GCs.integrated <- FindNeighbors(Germ_GCs.integrated, reduction = "pca", dims = 1:20)
+
+Germ_GCs.integrated <- FindClusters(Germ_GCs.integrated, resolution = 0.2)
+table(Germ_GCs.integrated@meta.data$seurat_clusters)
+
+p1 <- DimPlot(Germ_GCs.integrated, reduction = "umap", group.by = "orig.ident")
+p2 <- DimPlot(Germ_GCs.integrated, reduction = "umap", group.by = "seurat_clusters")
+plot_grid(p1, p2)
+
+
+p1 <- DimPlot(Germ_GCs.integrated, reduction = "umap",pt.size = 0.8, 
+              group.by = "orig.ident", cols = c("mediumorchid2","#99c9fb","darkcyan"))
+p2 <- DimPlot(Germ_GCs.integrated, reduction = "umap",pt.size = 0.8, 
+              group.by = "seurat_clusters", label = TRUE)
+plot_grid(p1, p2)
+
+DimPlot(Germ_GCs.integrated, reduction = "umap", split.by = "orig.ident")
+
+#### Rename
+
+Germ_GCs.integrated_remane <- RenameIdents(Germ_GCs.integrated, 
+                                     `1` = "Germ cells",
+                                     `2` = "Germ cells", 
+                                     `6` = "Germ cells",
+                                     `0` = "Granulosa cells", 
+                                     `3` = "Granulosa cells", 
+                                     `4` = "Granulosa cells",
+                                     `5` = "Granulosa cells")
+DimPlot(Germ_GCs.integrated_remane, label = TRUE)
+
+## Hippo
+
+markers.to.plot <- c("Yap1","Taz", "Sav1",
+                     "Lats1", "Lats2","Fzd2","Fzd3",  
+                     "Cyr61","Ctgf")
+library(ggplot2)
+DotPlot(Germ_GCs.integrated_remane, features = rev(markers.to.plot), cols = c("blue", "red"), dot.scale = 8) + 
+  RotatedAxis()+ theme(axis.text.x.bottom = element_text(size=20,angle = 45))
+
+VlnPlot(object = Germs_cells, features = c("Fat4", "Mst1","Sav1",
+                                           "Lats1", "Lats2", 
+                                           "Taz","Cyr61","Ctgf"), group.by="orig.ident",pt.size = 0.1)
+
+VlnPlot(object = Subset_Germs, features = c("Yap","Taz", "Sav1",
+                                            "Lats1", "Lats2","Fzd2","Fzd3",  
+                                            "Cyr61","Ctgf"), group.by="orig.ident",pt.size = 0.1)
+VlnPlot(object = Subset_Granulosa, features = c("Yap","Taz", "Sav1",
+                                                "Lats1", "Lats2","Fzd2","Fzd3",  
+                                                "Cyr61","Ctgf"), group.by="orig.ident",pt.size = 0.1)
+
+##FoxO
+
+markers.to.plot <- c("Foxo1", "Foxo3",
+                     "Cdkn1b", "Gadd45a", "Gadd45b", 
+                     "Gabarapl2","Bnip3","Map1lc3b")
+DotPlot(Germ_GCs.integrated_remane, features = rev(markers.to.plot), cols = c("blue", "red"), dot.scale = 8) + 
+  RotatedAxis()+ theme(axis.text.x.bottom = element_text(size=20,angle = 45))
+
+VlnPlot(object = Subset_Germs, features = c("Foxo1", "Foxo3",
+                                           "Cdkn1b", "Gadd45a","Gadd45b",  
+                                           "Gabarapl2","Bnip3","Map1lc3b"), group.by="orig.ident",pt.size = 0.1)
+VlnPlot(object = Subset_Granulosa, features = c("Foxo1", "Foxo3","Foxo4", 
+                                   "Cdkn1a", "Cdkn1b", "Gadd45a",  
+                                   "Gabarapl2","Bnip3","Map1lc3b"), group.by="orig.ident",pt.size = 0.1)
+
+
+#tight
+markers.to.plot <- c("Cldn3","Cldn7","Cldn11","Cldn15","Jam2","Jam3","Ocln")
+DotPlot(Germ_GCs.integrated_remane, features = rev(markers.to.plot), cols = c("blue", "red"), dot.scale = 8) + 
+  RotatedAxis()+ theme(axis.text.x.bottom = element_text(size=18,angle = 45))
+
+
+## adherents
+markers.to.plot <- c("Cdh1","Actn1","Actn4","Csnk2a1","Csnk2a2")
+DotPlot(Germ_GCs.integrated_remane, features = rev(markers.to.plot), cols = c("blue", "red"), dot.scale = 8) + 
+  RotatedAxis()+ theme(axis.text.x.bottom = element_text(size=18,angle = 45))
+
 
 #############################################################################################
          #########///////=========Monocle version=2.10.1========\\\\\\\#############
